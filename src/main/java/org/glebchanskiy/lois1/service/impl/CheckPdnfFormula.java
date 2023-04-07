@@ -1,4 +1,4 @@
-package org.glebchanskiy.lois1.utils;
+package org.glebchanskiy.lois1.service.impl;
 
 import java.util.ArrayList;
 

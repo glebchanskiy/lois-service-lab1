@@ -2,18 +2,18 @@ package org.glebchanskiy.lois1.controller;
 
 import lombok.AllArgsConstructor;
 import org.glebchanskiy.lois1.model.Message;
-import org.glebchanskiy.lois1.service.PcnfValidateService;
+import org.glebchanskiy.lois1.service.PdnfValidateService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/validate")
-public class PcnfValidateController {
+public class PdnfValidateController {
 
-    private final PcnfValidateService pcnfValidateService;
+    private final PdnfValidateService pdnfValidateService;
 
     @PostMapping
     public Message validate(@RequestBody Message message) {
-        return pcnfValidateService.validate(message.getText());
+        return pdnfValidateService.validate(message.getText());
     }
 }
