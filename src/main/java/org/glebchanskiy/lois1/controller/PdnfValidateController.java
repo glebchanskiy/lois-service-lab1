@@ -12,6 +12,7 @@ public class PdnfValidateController {
 
     private final PdnfValidateService pdnfValidateService;
 
+    @CrossOrigin
     @PostMapping
     public Message validate(@RequestBody Message message) {
         return pdnfValidateService.validate(message.getText());
