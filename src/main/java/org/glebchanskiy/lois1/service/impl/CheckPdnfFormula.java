@@ -1,6 +1,8 @@
 package org.glebchanskiy.lois1.service.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class CheckPdnfFormula {
     private static final String grammarRules = "()/\\!ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -8,7 +10,7 @@ public class CheckPdnfFormula {
 
     private static final int zero = 0;
     private static final int one = 1;
-    private static final int two =2;
+    private static final int two = 2;
 
     private static final String conjunction = "/\\";
     private static final String disjunction = "\\/";
@@ -32,7 +34,7 @@ public class CheckPdnfFormula {
             return two;
         }
 
-        String[] terms = divideExpression(formula,disjunction);  //делим на слагаемые
+        String[] terms = divideExpression(formula, disjunction);  //делим на слагаемые
         String[] terms2 = new String[terms.length];  //избавляемся от скобок
 
         int k = 0;
@@ -59,8 +61,7 @@ public class CheckPdnfFormula {
         int multiplierCount = 0;
 
         for (String term : terms2) {
-            multipliers = divideExpression(term,conjunction); //делим слагаемое на отдельные "формулы"
-
+            multipliers = divideExpression(term, conjunction); //делим слагаемое на отдельные "формулы"
             if (multiplierCount == 0) {
                 multiplierCount = multipliers.length;
                 firstMultipliers = multipliers;
@@ -110,7 +111,6 @@ public class CheckPdnfFormula {
                 }
             }
         }
-
         return isCorrectBrackets(terms, multiplierCount);
     }
 
@@ -133,7 +133,7 @@ public class CheckPdnfFormula {
                     int prev = 1, next = 1;
                     try {
                         if (formula.charAt(i - 1) == '!') {
-                            prev+=2;
+                            prev += 2;
                             next++;
                         }
                         if (formula.charAt(i - prev) != '(' && formula.charAt(i + next) != ')')
@@ -182,30 +182,127 @@ public class CheckPdnfFormula {
         return result.toArray(new String[0]);
     }
 
+    private static String reverseExpression(String expression) {
+        StringBuilder output = new StringBuilder();
+        for (int i = expression.length() - 1; i >= 0; i--) {
+            switch (expression.charAt(i)) {
+                case ')' -> output.append('(');
+                case '(' -> output.append(')');
+                case '/' -> output.append('\\');
+                case '\\' -> output.append('/');
+                default -> {
+                    if (expression.charAt(i - 1) == '!') {
+                        output.append(expression.charAt(i - 1)).append(expression.charAt(i));
+                        i--;
+                    } else {
+                        output.append(expression.charAt(i));
+                    }
+                }
+            }
+
+        }
+        return String.valueOf(output);
+    }
+
+    private static String[] reverseTerms(String[] terms) {
+        String[] reversed = Arrays.copyOf(terms, terms.length);
+
+        Collections.reverse(Arrays.asList(reversed));
+
+        for (int i = 0; i < reversed.length; i++) {
+
+            reversed[i] = reverseExpression(reversed[i]);
+        }
+        return reversed;
+    }
+
+    public static int[] getCounters(String term) {
+        int countOpenBrackets = 0;
+        int countCloseBrackets = 0;
+        for (int j = 0; j < term.length(); j++) {
+            if (term.charAt(j) == '(')
+                countOpenBrackets++;
+            if (term.charAt(j) == ')')
+                countCloseBrackets++;
+            try {
+                if (term.charAt(j) == '!')
+                    if (term.charAt(j - 1) == '(' && term.charAt(j + 2) == ')') {
+                        countOpenBrackets--;
+                        countCloseBrackets--;
+                    } else
+
+                        return new int[]{two};
+            } catch (Exception e) {
+
+                return new int[]{two};
+            }
+        }
+        return new int[]{countOpenBrackets, countCloseBrackets};
+    }
+
+    private static int getMaxCountViaGetCounters(String[] terms) {
+        int maxCounter = 0;
+        for (String term : terms) {
+            int[] counters = CheckPdnfFormula.getCounters(term);
+            if (counters.length > 1) {
+                int firstCounter = counters[0];
+                if (firstCounter > maxCounter) {
+                    maxCounter = firstCounter;
+                }
+            }
+        }
+        return maxCounter;
+    }
+
+    private static int getMaxOpeningBracketCount(String[] terms) {
+        int maxCount = 0;
+        for (String term : terms) {
+            int count = 0;
+            for (int i = 0; i < term.length(); i++) {
+                if (term.charAt(i) == '(') {
+                    count++;
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+            }
+        }
+        return maxCount;
+    }
+
+
+    private static int getCountsOfOpenBrackets(String term){
+        int count = 0;
+        for (int i = 0; i < term.length(); i++) {
+            if (term.charAt(i) == '(') {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
     private static int isCorrectBrackets(String[] terms, int multiplierCount) {
         int countTerms = terms.length;
 
+
+        int maxCountOfOpen = getMaxOpeningBracketCount(terms);
+
+        int maxCountViaGetCounters = getMaxCountViaGetCounters(terms);
+
+
+        if(!(maxCountOfOpen == maxCountViaGetCounters && maxCountViaGetCounters == getCounters(terms[0])[0]
+                && getCounters(terms[0])[0]  == getCountsOfOpenBrackets(terms[0]))){
+            terms = reverseTerms(terms);
+        }
         for (int i = 0; i < countTerms; i++) {
-            int countOpenBrackets = 0;
-            int countCloseBrackets = 0;
-            for (int j = 0; j < terms[i].length(); j++) {
-                if (terms[i].charAt(j) == '(')
-                    countOpenBrackets++;
-                if (terms[i].charAt(j) == ')')
-                    countCloseBrackets++;
-                try{
-                    if (terms[i].charAt(j) == '!')
-                        if (terms[i].charAt(j - 1) == '(' && terms[i].charAt(j + 2) == ')') {
-                            countOpenBrackets--;
-                            countCloseBrackets--;
-                        } else
-
-                            return two;}
-                catch(Exception e){
-
-                    return two;
-                }
+            int[] counters = getCounters(terms[i]);
+            if (counters.length == 1) {
+                return two;
             }
+            int countOpenBrackets = counters[0];
+            int countCloseBrackets = counters[1];
+
 
             if (i == 0) {
                 if (terms.length == 1 && divideExpression(terms[i], conjunction).length == 1) {
@@ -213,10 +310,9 @@ public class CheckPdnfFormula {
                         return two;
                 } else if (countOpenBrackets != (multiplierCount - 1 + countTerms - 1) ||
                         countCloseBrackets != multiplierCount - 1) {
-
                     return two;
                 }
-            } else if (countCloseBrackets != (multiplierCount - 1 + 1) ||
+            } else if (countCloseBrackets != multiplierCount ||
                     countOpenBrackets != multiplierCount - 1) {
 
                 return two;
