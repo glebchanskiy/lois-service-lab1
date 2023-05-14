@@ -3,7 +3,6 @@ package org.glebchanskiy.lois1.service.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 
 public class CheckPdnfFormula {
     private static final String grammarRules = "()/\\!ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -241,30 +240,59 @@ public class CheckPdnfFormula {
         return new int[]{countOpenBrackets, countCloseBrackets};
     }
 
+    private static int getMaxCountViaGetCounters(String[] terms) {
+        int maxCounter = 0;
+        for (String term : terms) {
+            int[] counters = CheckPdnfFormula.getCounters(term);
+            if (counters.length > 1) {
+                int firstCounter = counters[0];
+                if (firstCounter > maxCounter) {
+                    maxCounter = firstCounter;
+                }
+            }
+        }
+        return maxCounter;
+    }
+
+    private static int getMaxOpeningBracketCount(String[] terms) {
+        int maxCount = 0;
+        for (String term : terms) {
+            int count = 0;
+            for (int i = 0; i < term.length(); i++) {
+                if (term.charAt(i) == '(') {
+                    count++;
+                }
+            }
+            if (count > maxCount) {
+                maxCount = count;
+            }
+        }
+        return maxCount;
+    }
+
+
+    private static int getCountsOfOpenBrackets(String term){
+        int count = 0;
+        for (int i = 0; i < term.length(); i++) {
+            if (term.charAt(i) == '(') {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
     private static int isCorrectBrackets(String[] terms, int multiplierCount) {
         int countTerms = terms.length;
 
 
-        int maxCountOfOpen = Arrays.stream(terms)
-                .mapToInt(term -> (int) term.chars()
-                        .filter(c -> c == '(')
-                        .count())
-                .max()
-                .orElse(0);
+        int maxCountOfOpen = getMaxOpeningBracketCount(terms);
 
-        int maxCountViaGetCounters = Arrays.stream(terms)
-                .map(CheckPdnfFormula::getCounters)
-                .filter(arr -> arr.length > 1)
-                .map(arr -> arr[0]).max(Comparator.comparingInt(a -> a))
-                .orElse(0);
-
+        int maxCountViaGetCounters = getMaxCountViaGetCounters(terms);
 
 
         if(!(maxCountOfOpen == maxCountViaGetCounters && maxCountViaGetCounters == getCounters(terms[0])[0]
-                && getCounters(terms[0])[0]  == terms[0].chars()
-                .mapToObj(c -> (char) c)
-                .filter(c -> c == '(')
-                .count())){
+                && getCounters(terms[0])[0]  == getCountsOfOpenBrackets(terms[0]))){
             terms = reverseTerms(terms);
         }
         for (int i = 0; i < countTerms; i++) {
