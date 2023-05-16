@@ -19,15 +19,11 @@ public class CheckPdnfFormula {
     public static int checkFormula(String formula) {
 
         if (formula == null || formula.equals("")) {
-
             return two;
         }
 
-        for (int i = 0; i < formula.length(); i++) {
-            if (grammarRules.indexOf(formula.charAt(i)) == -1) { //некорретные символы
-
-                return one;
-            }
+        if (checkGrammarRules(formula) == one) {
+            return one;
         }
 
         if (!isCorrectSequenceBrackets(formula)) {
@@ -35,7 +31,99 @@ public class CheckPdnfFormula {
         }
 
         String[] terms = divideExpression(formula, disjunction);  //делим на слагаемые
-        String[] terms2 = new String[terms.length];  //избавляемся от скобок
+
+        if (checkRepetitionOfSigns(deleteBrackets(terms))) {
+            return two;
+        }
+
+        String[] multipliers;
+        String[] firstMultipliers = new String[0];
+
+        ArrayList<String[]> lastTerms = new ArrayList<>();
+        int multiplierCount = 0;
+
+        for (String term : deleteBrackets(terms)) {
+            multipliers = divideExpression(term, conjunction); //делим слагаемое на отдельные "формулы"
+            if (multiplierCount == 0) {
+                multiplierCount = multipliers.length;
+                firstMultipliers = multipliers;
+                lastTerms.add(multipliers);
+            } else {
+                if (multiplierCount != multipliers.length){ //сравниваем кол-во множителей у слагаемых
+                    return one;
+                }
+                if (equalExpression(lastTerms, multipliers)) {
+                    return one;
+                }
+
+                if (checkRepetitionOfSymbolsInMultipliers(multiplierCount, multipliers, firstMultipliers) == one) {
+                    return one;
+                }
+                lastTerms.add(multipliers);
+            }
+
+            if (checkInside(multipliers) == one) {
+                return one;
+            }
+        }
+        return isCorrectBrackets(terms, multiplierCount);
+    }
+
+    private static int checkGrammarRules(String formula) {
+        for (int i = 0; i < formula.length(); i++) {
+            if (grammarRules.indexOf(formula.charAt(i)) == -1) { //некорретные символы
+                return one;
+            }
+        }
+        return two;
+    }
+
+    private static int checkInside(String[] multipliers) {
+        for (int i = 0; i < multipliers.length; i++) {
+            int lastIndex1 = multipliers[i].length();
+            if (lastIndex1 > 2) {//если кол-во знаков у множителя > 2
+                return one;
+            }
+
+            if (checkInside(i, multipliers, lastIndex1) == one) {
+                return one;
+            }
+        }
+        return two;
+    }
+
+    private static int checkInside(int i, String[] multipliers, int lastIndex1) {
+        for (int j = i + 1; j < multipliers.length; j++) {
+            int lastIndex2 = multipliers[j].length();
+            //если в множителе некоторые символы ==, то это не сднф(A&(B&A))
+            if (multipliers[i].charAt(lastIndex1 - 1) == multipliers[j].charAt(lastIndex2 - 1)) {
+                return one;
+            }
+        }
+        return two;
+    }
+
+    private static int checkRepetitionOfSymbolsInMultipliers(int multiplierCount, String[] multipliers, String[] firstMultipliers) {
+        for (int i = 0; i < multiplierCount; i++) {
+            int count = 0;
+            int start = 0;
+
+            for (int j = 0; j < multiplierCount; j++) {
+                int lastIndex2 = multipliers[j].length() - 1;
+                while (firstMultipliers[i].indexOf(multipliers[j].charAt(lastIndex2), start) != -1) {
+                    count++;
+                    start = firstMultipliers[i].indexOf(multipliers[j].charAt(lastIndex2), start) + 1;
+                }
+            }
+            if (count != 1) {
+                return one;
+            }
+        }
+        return two;
+    }
+
+    private static String[] deleteBrackets(String[] terms) {
+        String[] termsWithoutBrackets = new String[terms.length];  //избавляемся от скобок
 
         int k = 0;
         for (String term : terms) {
@@ -44,74 +132,20 @@ public class CheckPdnfFormula {
                 if (brackets.indexOf(term.charAt(i)) == -1)
                     stringBuilder.append(term.charAt(i));
             }
-            terms2[k] = stringBuilder.toString();
+            termsWithoutBrackets[k] = stringBuilder.toString();
             k++;
         }
+        return termsWithoutBrackets;
+    }
 
-        for (String term : terms2)
+    private static boolean checkRepetitionOfSigns(String[] terms) {
+        for (String term : terms)
             for (int i = 0; i < term.length() - 1; i++) { //повторение знаков, например,(A&&B)
-                if (term.charAt(i) == term.charAt(i + 1)) //если за следующим знаком идет такой же то возращаем false
-                    return two;
-
-            }
-
-        String[] multipliers;
-        String[] firstMultipliers = new String[0];
-        ArrayList<String[]> lastTerms = new ArrayList<>();
-        int multiplierCount = 0;
-
-        for (String term : terms2) {
-            multipliers = divideExpression(term, conjunction); //делим слагаемое на отдельные "формулы"
-            if (multiplierCount == 0) {
-                multiplierCount = multipliers.length;
-                firstMultipliers = multipliers;
-                lastTerms.add(multipliers);
-            } else {
-                if (multiplierCount != multipliers.length) { //сравниваем кол-во множителей у слагаемых
-
-                    return one;
-                }
-                if (equalExpression(lastTerms, multipliers)) {
-
-                    return one;
-                }
-
-                lastTerms.add(multipliers);
-
-
-                for (int i = 0; i < multiplierCount; i++) {
-                    int count = 0;
-                    int start = 0;
-
-                    for (int j = 0; j < multiplierCount; j++) {
-                        int lastIndex2 = multipliers[j].length() - 1;
-                        while (firstMultipliers[i].indexOf(multipliers[j].charAt(lastIndex2), start) != -1) {
-                            count++;
-                            start = firstMultipliers[i].indexOf(multipliers[j].charAt(lastIndex2), start) + 1;
-                        }
-                    }
-                    if (count != 1) {
-                        return one;
-                    }
+                if (term.charAt(i) == term.charAt(i + 1)) {//если за следующим знаком идет такой же то возращаем false
+                    return true;
                 }
             }
-
-            for (int i = 0; i < multipliers.length; i++) {
-                int lastIndex1 = multipliers[i].length();
-                if (lastIndex1 > 2) {//если кол-во знаков у множителя > 2
-                    return one;
-                }
-
-                for (int j = i + 1; j < multipliers.length; j++) {
-                    int lastIndex2 = multipliers[j].length();
-                    //если в множителе некоторые символы ==, то это не сднф(A&(B&A))
-                    if (multipliers[i].charAt(lastIndex1 - 1) == multipliers[j].charAt(lastIndex2 - 1)) {
-                        return one;
-                    }
-                }
-            }
-        }
-        return isCorrectBrackets(terms, multiplierCount);
+        return false;
     }
 
     private static boolean isCorrectSequenceBrackets(String formula) {
@@ -271,7 +305,7 @@ public class CheckPdnfFormula {
     }
 
 
-    private static int getCountsOfOpenBrackets(String term){
+    private static int getCountsOfOpenBrackets(String term) {
         int count = 0;
         for (int i = 0; i < term.length(); i++) {
             if (term.charAt(i) == '(') {
@@ -291,8 +325,8 @@ public class CheckPdnfFormula {
         int maxCountViaGetCounters = getMaxCountViaGetCounters(terms);
 
 
-        if(!(maxCountOfOpen == maxCountViaGetCounters && maxCountViaGetCounters == getCounters(terms[0])[0]
-                && getCounters(terms[0])[0]  == getCountsOfOpenBrackets(terms[0]))){
+        if (!(maxCountOfOpen == maxCountViaGetCounters && maxCountViaGetCounters == getCounters(terms[0])[0]
+                && getCounters(terms[0])[0] == getCountsOfOpenBrackets(terms[0]))) {
             terms = reverseTerms(terms);
         }
         for (int i = 0; i < countTerms; i++) {
