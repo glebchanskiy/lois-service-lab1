@@ -37,26 +37,18 @@ public class CheckPdnfFormula {
         }
 
         String[] multipliers;
+        int multiplierCount = 0;
         String[] firstMultipliers = new String[0];
 
         ArrayList<String[]> lastTerms = new ArrayList<>();
-        int multiplierCount = 0;
-
-        for (String term : deleteBrackets(terms)) {
-            multipliers = divideExpression(term, conjunction); //делим слагаемое на отдельные "формулы"
+        for (int i =0; i < deleteBrackets(terms).length; i++) {
+            multipliers = divideExpression(deleteBrackets(terms)[i], conjunction); //делим слагаемое на отдельные "формулы"
             if (multiplierCount == 0) {
                 multiplierCount = multipliers.length;
                 firstMultipliers = multipliers;
                 lastTerms.add(multipliers);
             } else {
-                if (multiplierCount != multipliers.length){ //сравниваем кол-во множителей у слагаемых
-                    return one;
-                }
-                if (equalExpression(lastTerms, multipliers)) {
-                    return one;
-                }
-
-                if (checkRepetitionOfSymbolsInMultipliers(multiplierCount, multipliers, firstMultipliers) == one) {
+                if(check(multiplierCount, multipliers, lastTerms, firstMultipliers) == one){
                     return one;
                 }
                 lastTerms.add(multipliers);
@@ -78,6 +70,20 @@ public class CheckPdnfFormula {
         return two;
     }
 
+    private static int check(int multiplierCount, String[] multipliers,
+                             ArrayList<String[]> lastTerms , String[] firstMultipliers){
+        if (multiplierCount != multipliers.length){ //сравниваем кол-во множителей у слагаемых
+            return one;
+        }
+        if (equalExpression(lastTerms, multipliers)) {
+            return one;
+        }
+
+        if (checkRepetitionOfSymbolsInMultipliers(multiplierCount, multipliers, firstMultipliers) == one) {
+            return one;
+        }
+        return two;
+    }
     private static int checkInside(String[] multipliers) {
         for (int i = 0; i < multipliers.length; i++) {
             int lastIndex1 = multipliers[i].length();
